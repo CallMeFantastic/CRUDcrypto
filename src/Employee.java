@@ -28,6 +28,7 @@ public class Employee {
     private JButton deleteButton;
     private JTextField salaryupdatefield;
     private JTextField idupdatefield;
+    private JTextField deletetextfield;
 
     //main function that sets the frame visible
     public static void main(String[] args) {
@@ -69,6 +70,22 @@ public class Employee {
         }
     }
 
+    private boolean isOnlyDigits(String str) {
+        int count,i;
+        count=0;
+        for (i=0; i<str.length();i++){
+            if(str.charAt(i)<='9' && str.charAt(i)>='0'){
+                count++;
+            }
+        }
+        if (count == str.length()){
+            return true;
+        }
+        else {
+            return false;
+        }
+    };
+
     public Employee() {
         connect();
         table_load();
@@ -109,9 +126,20 @@ public class Employee {
                 try {
                     //TODO:control the input variable
                     pst = con.prepareStatement("select * from employee where salary <=?");
-                    pst.setString(1,searchtextfield.getText());
-                    ResultSet rs = pst.executeQuery();
-                    table1.setModel(DbUtils.resultSetToTableModel(rs));
+                    if (isOnlyDigits(searchtextfield.getText())){
+                        pst.setString(1,searchtextfield.getText());
+                        ResultSet rs = pst.executeQuery();
+                        if(rs.next() == false){
+                            //TODO:fix this part, handle multiple null resultset
+                            JOptionPane.showMessageDialog(null,"No record found");
+                        }
+                        else{
+                            table1.setModel(DbUtils.resultSetToTableModel(rs));
+                        }
+                    }
+                    else{
+                        JOptionPane.showMessageDialog(null,"Invalid input");
+                    }
                     searchtextfield.setText("");
 
                 }catch (SQLException e3){
@@ -139,6 +167,22 @@ public class Employee {
                 }
 
 
+            }
+        });
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    pst = con.prepareStatement("DELETE FROM employee where id = ?");
+                    pst.setString(1,deletetextfield.getText());
+                    pst.executeUpdate();
+                    JOptionPane.showMessageDialog(null,"Deletion completed");
+                    table_load();
+                    deletetextfield.setText("");
+                }
+                catch(SQLException e5){
+                    e5.printStackTrace();
+                }
             }
         });
     }
