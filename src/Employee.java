@@ -1,3 +1,4 @@
+import com.mysql.cj.protocol.Resultset;
 import net.proteanit.sql.DbUtils;
 
 import javax.swing.*;
@@ -29,6 +30,7 @@ public class Employee {
     private JTextField salaryupdatefield;
     private JTextField idupdatefield;
     private JTextField deletetextfield;
+    private JButton RefreshButton;
 
     //main function that sets the frame visible
     public static void main(String[] args) {
@@ -92,22 +94,20 @@ public class Employee {
         saveButton1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                String empname,salary,mobile;
-
-                empname = nametextfield.getText();
-                salary = salarytextfield.getText();
-                mobile = mobiletextfield.getText();
-
                 try {
-                    //TODO:control the input variable
                     pst = con.prepareStatement("insert into employee(empname,salary,mobile) values (?,?,?)");
-                    pst.setString(1,empname);
-                    pst.setString(2,salary);
-                    pst.setString(3,mobile);
-                    pst.executeUpdate();
+                    if(isOnlyChars(nametextfield.getText()) && isOnlyDigits(salarytextfield.getText()) && isOnlyDigits(mobiletextfield.getText())){
+                        //TODO: piuttosto che isOnlyDigits crea una funzione che verifichi e accetti realmente numeri di telefono
+                        pst.setString(1,nametextfield.getText());
+                        pst.setString(2,salarytextfield.getText());
+                        pst.setString(3,mobiletextfield.getText());
+                        pst.executeUpdate();
+                        JOptionPane.showMessageDialog(null,"Record added");
+                    }
+                    else{
+                        JOptionPane.showMessageDialog(null,"Record not added, invalid input");
+                    }
                     table_load();
-                    JOptionPane.showMessageDialog(null,"Record added");
                     nametextfield.setText(""); //risetta vuoto i text fields
                     salarytextfield.setText("");
                     mobiletextfield.setText("");
@@ -116,24 +116,22 @@ public class Employee {
                 } catch(SQLException e1) {
                     e1.printStackTrace();
                 }
-
-
             }
         });
+
         searchbutton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    //TODO:control the input variable
-                    pst = con.prepareStatement("select * from employee where salary <=?");
+                    pst = con.prepareStatement("select * from employee where salary <=?",ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_UPDATABLE);
                     if (isOnlyDigits(searchtextfield.getText())){
                         pst.setString(1,searchtextfield.getText());
                         ResultSet rs = pst.executeQuery();
-                        if(rs.next() == false){
-                            //TODO:fix this part, handle multiple null resultset
+                        if(!rs.next()){
                             JOptionPane.showMessageDialog(null,"No record found");
                         }
                         else{
+                            rs.previous();
                             table1.setModel(DbUtils.resultSetToTableModel(rs));
                         }
                     }
@@ -152,31 +150,48 @@ public class Employee {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    //TODO:control the input variable
                     pst = con.prepareStatement("UPDATE employee set salary = ? where id= ?");
-                    pst.setString(1,salaryupdatefield.getText());
-                    pst.setString(2,idupdatefield.getText());
-                    pst.executeUpdate();
+                    if(isOnlyDigits(salaryupdatefield.getText()) && isOnlyDigits(idupdatefield.getText())){
+                        pst.setString(1,salaryupdatefield.getText());
+                        pst.setString(2,idupdatefield.getText());
+                        int rs = pst.executeUpdate();
+                        if(rs == 0){
+                            JOptionPane.showMessageDialog(null,"Not updated, probably id not exists");
+                        }
+                        else{
+                            JOptionPane.showMessageDialog(null,"Update completed");
+                        }
+                    }
+                    else {
+                        JOptionPane.showMessageDialog(null,"invalid input");
+                    }
                     table_load();
                     salaryupdatefield.setText("");
                     idupdatefield.setText("");
-                    JOptionPane.showMessageDialog(null,"Update completed");
-
                 } catch(SQLException e4){
                     e4.printStackTrace();
                 }
-
-
             }
         });
+
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
                     pst = con.prepareStatement("DELETE FROM employee where id = ?");
-                    pst.setString(1,deletetextfield.getText());
-                    pst.executeUpdate();
-                    JOptionPane.showMessageDialog(null,"Deletion completed");
+                    if(isOnlyDigits(deletetextfield.getText())) {
+                        pst.setString(1, deletetextfield.getText());
+                        int rs = pst.executeUpdate();
+                        System.out.println(rs);
+                        if(rs == 0){
+                            JOptionPane.showMessageDialog(null,"No tuple for such id");
+                        }
+                        else{
+                            JOptionPane.showMessageDialog(null,"Deletion completed");
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(null,"Invalid input");
+                    }
                     table_load();
                     deletetextfield.setText("");
                 }
@@ -185,6 +200,16 @@ public class Employee {
                 }
             }
         });
+        RefreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                table_load();
+            }
+        });
+    }
+
+    private boolean isOnlyChars(String text) {
+        return text.matches("[a-zA-Z]+");
     }
 
     private void createUIComponents() {
