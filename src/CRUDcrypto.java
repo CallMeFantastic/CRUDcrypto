@@ -2,12 +2,11 @@ import com.mysql.cj.protocol.Resultset;
 import net.proteanit.sql.DbUtils;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.sql.*;
 
 
-public class Employee {
+public class CRUDcrypto {
     private JPanel Main;
 
     private JTable table1;
@@ -35,7 +34,7 @@ public class Employee {
     //main function that sets the frame visible
     public static void main(String[] args) {
         JFrame frame = new JFrame("Employee");
-        frame.setContentPane(new Employee().Main);
+        frame.setContentPane(new CRUDcrypto().Main);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
@@ -88,7 +87,11 @@ public class Employee {
         }
     };
 
-    public Employee() {
+    private boolean isOnlyChars(String text) {
+        return text.matches("[a-zA-Z]+");
+    };
+
+    public CRUDcrypto() {
         connect();
         table_load();
         saveButton1.addActionListener(new ActionListener() {
@@ -147,6 +150,7 @@ public class Employee {
             }
         });
         updatebutton.addActionListener(new ActionListener() {
+            //TODO: sistema scomparsa testo nei due textfield di update ( se clicchi su uno sparisce l'altro)
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
@@ -206,10 +210,158 @@ public class Employee {
                 table_load();
             }
         });
-    }
+        searchtextfield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                super.focusGained(e);
+                searchtextfield.setText("");
+            }
+        });
+        salaryupdatefield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                super.focusGained(e);
+                salaryupdatefield.setText("");
+            }
+        });
+        searchtextfield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                searchtextfield.setText("salary");
+            }
+        });
+        salaryupdatefield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                salaryupdatefield.setText("salary");
+            }
+        });
+        idupdatefield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                super.focusGained(e);
+                idupdatefield.setText("");
+            }
+        });
 
-    private boolean isOnlyChars(String text) {
-        return text.matches("[a-zA-Z]+");
+        idupdatefield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                idupdatefield.setText("EmployeeId");
+            }
+        });
+
+        deletetextfield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                super.focusGained(e);
+                deletetextfield.setText("");
+            }
+        });
+
+        deletetextfield.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                deletetextfield.setText("EmployeeId");
+            }
+        });
+
+        searchtextfield.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                super.keyPressed(e);
+                if(e.getKeyCode() == KeyEvent.VK_ENTER){
+                    try {
+                        pst = con.prepareStatement("select * from employee where salary <=?",ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_UPDATABLE);
+                        if (isOnlyDigits(searchtextfield.getText())){
+                            pst.setString(1,searchtextfield.getText());
+                            ResultSet rs = pst.executeQuery();
+                            if(!rs.next()){
+                                JOptionPane.showMessageDialog(null,"No record found");
+                            }
+                            else{
+                                rs.previous();
+                                table1.setModel(DbUtils.resultSetToTableModel(rs));
+                            }
+                        }
+                        else{
+                            JOptionPane.showMessageDialog(null,"Invalid input");
+                        }
+                        searchtextfield.setText("");
+
+                    }catch (SQLException e3){
+                        e3.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        salaryupdatefield.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                super.keyPressed(e);
+                if(e.getKeyCode() == KeyEvent.VK_ENTER){
+                    try {
+                        pst = con.prepareStatement("UPDATE employee set salary = ? where id= ?");
+                        if(isOnlyDigits(salaryupdatefield.getText()) && isOnlyDigits(idupdatefield.getText())){
+                            pst.setString(1,salaryupdatefield.getText());
+                            pst.setString(2,idupdatefield.getText());
+                            int rs = pst.executeUpdate();
+                            if(rs == 0){
+                                JOptionPane.showMessageDialog(null,"Not updated, probably id not exists");
+                            }
+                            else{
+                                JOptionPane.showMessageDialog(null,"Update completed");
+                            }
+                        }
+                        else {
+                            JOptionPane.showMessageDialog(null,"invalid input");
+                        }
+                        table_load();
+                        salaryupdatefield.setText("");
+                        idupdatefield.setText("");
+                    } catch(SQLException e4){
+                        e4.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        idupdatefield.addKeyListener(new KeyAdapter() {
+            //TODO: use the same keylistener for both textfields (idupdatefield & salaryupdatefield)
+            @Override
+            public void keyPressed(KeyEvent e) {
+                super.keyPressed(e);
+                if(e.getKeyCode() == KeyEvent.VK_ENTER ){
+                    try {
+                        pst = con.prepareStatement("UPDATE employee set salary = ? where id= ?");
+                        if(isOnlyDigits(salaryupdatefield.getText()) && isOnlyDigits(idupdatefield.getText())){
+                            pst.setString(1,salaryupdatefield.getText());
+                            pst.setString(2,idupdatefield.getText());
+                            int rs = pst.executeUpdate();
+                            if(rs == 0){
+                                JOptionPane.showMessageDialog(null,"Not updated, probably id not exists");
+                            }
+                            else{
+                                JOptionPane.showMessageDialog(null,"Update completed");
+                            }
+                        }
+                        else {
+                            JOptionPane.showMessageDialog(null,"invalid input");
+                        }
+                        table_load();
+                        salaryupdatefield.setText("");
+                        idupdatefield.setText("");
+                    } catch(SQLException e4){
+                        e4.printStackTrace();
+                    }
+                }
+            }
+        });
     }
 
     private void createUIComponents() {
